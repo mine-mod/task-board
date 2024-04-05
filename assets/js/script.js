@@ -37,3 +37,10 @@ function handleDrop(event, ui) {
 $(document).ready(function () {
 
 });
+
+$( function() {
+    $( "#taskDueDate" ).datepicker({
+      changeMonth: true,
+      changeYear: true
+    });
+  } );
