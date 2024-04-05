@@ -1,6 +1,7 @@
 // Retrieve tasks and nextId from localStorage
 let taskList = JSON.parse(localStorage.getItem("tasks"));
 let nextId = JSON.parse(localStorage.getItem("nextId"));
+var myModal = new bootstrap.Modal(document.getElementById('taskModal'));
 
 // Todo: create a function to generate a unique task id
 function generateTaskId() {
