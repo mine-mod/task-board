@@ -1,102 +1,171 @@
-// Retrieve tasks and nextId from localStorage
-let taskList = JSON.parse(localStorage.getItem("tasks"));
-let nextId = JSON.parse(localStorage.getItem("nextId"));
-var myModal = new bootstrap.Modal(document.getElementById('taskModal'));
+ const timeDisplayEl = $('#time-display');
+ const projectDisplayEl = $('#project-display');
+ const projectFormEl = $('#project-form');
+ const projectNameInputEl = $('#taskName');
+ const projectTypeInputEl = $('#taskDescription');
+ const projectDateInputEl = $('#taskDueDate');
 
-// Todo: create a function to generate a unique task id
-function generateTaskId() {
-  let uniqueId = nextId;
-  nextId++;
-  localStorage.setItem("nextId", nextId);
-  return uniqueId;
-}
+ function displayTime() {
+   const rightNow = dayjs().format('MMM DD, YYYY [at] hh:mm:ss a');
+   timeDisplayEl.text(rightNow);
+ }
 
-// Todo: create a function to create a task card
-function createTaskCard(task) {
-    const card = document.createElement('div');
-    card.classList.add('card', 'mb-3');
+ function readProjectsFromStorage() {
+   let projects = JSON.parse(localStorage.getItem('projects'));
 
-    const cardBody = document.createElement('div');
-    cardBody.classList.add('card-body');
+   if (!projects) {
+     projects = [];
+   }
 
-    const title = document.createElement('h5');
-    title.classList.add('card-title');
-    title.textContent = task.name;
+   return projects;
+ }
 
-    const description = document.createElement('p');
-    description.classList.add('card-text');
-    description.textContent = task.description;
+ function saveProjectsToStorage(projects) {
+   localStorage.setItem('projects', JSON.stringify(projects));
+ }
 
-    const dueDate = document.createElement('p');
-    dueDate.classList.add('card-text');
-    dueDate.innerHTML = `<strong>Due Date:</strong> ${task.dueDate}`;
+ function createProjectCard(project) {
+   const taskCard = $('<div>')
+     .addClass('card project-card draggable my-3')
+     .attr('data-project-id', project.id);
+   const cardHeader = $('<div>').addClass('card-header h4').text(project.name);
+   const cardBody = $('<div>').addClass('card-body');
+   const cardDescription = $('<p>').addClass('card-text').text(project.type);
+   const cardDueDate = $('<p>').addClass('card-text').text(project.dueDate);
+   const cardDeleteBtn = $('<button>')
+     .addClass('btn btn-danger delete')
+     .text('Delete')
+     .attr('data-project-id', project.id);
+   cardDeleteBtn.on('click', handleDeleteProject);
 
-    cardBody.appendChild(title);
-    cardBody.appendChild(description);
-    cardBody.appendChild(dueDate);
+   if (project.dueDate && project.status !== 'done') {
+     const now = dayjs();
+     const taskDueDate = dayjs(project.dueDate, 'DD/MM/YYYY');
 
-    card.appendChild(cardBody);
+     if (now.isSame(taskDueDate, 'day')) {
+       taskCard.addClass('bg-warning text-white');
+     } else if (now.isAfter(taskDueDate)) {
+       taskCard.addClass('bg-danger text-white');
+       cardDeleteBtn.addClass('border-light');
+     }
+   }
 
-    return card;
-}
+   cardBody.append(cardDescription, cardDueDate, cardDeleteBtn);
+   taskCard.append(cardHeader, cardBody);
 
-// Todo: create a function to render the task list and make cards draggable
-function renderTaskList() {
-  let taskList = JSON.parse(localStorage.getItem("tasks")) || [];
- 
-  taskList.forEach(task => {
-    const card = createTaskCard(task);
+   return taskCard;
+ }
 
-    let column;
-    if (task.status === "Not Yet Started") {
-        column = document.getElementById("todo-cards");
-    } else if (task.status === "In Progress") {
-        column = document.getElementById("in-progress-cards");
-    } else if (task.status === "Done") {
-        column = document.getElementById("done-cards");
-    }
+ function printProjectData() {
+   const projects = readProjectsFromStorage();
 
-    if (column) {
-        column.appendChild(card);
-    } else {
-        console.error("Column element not found for task status: " + task.status);
-    }
-});
+   const todoList = $('#todo-cards');
+   todoList.empty();
 
-$(".card").draggable({
-  revert: "invalid",
-  helper: "clone"
-});
-}
+   const inProgressList = $('#in-progress-cards');
+   inProgressList.empty();
 
-$(document).ready(function() {
-  renderTaskList();
-});
+   const doneList = $('#done-cards');
+   doneList.empty();
 
+   for (let project of projects) {
+     if (project.status === 'to-do') {
+       todoList.append(createProjectCard(project));
+     } else if (project.status === 'in-progress') {
+       inProgressList.append(createProjectCard(project));
+     } else if (project.status === 'done') {
+       doneList.append(createProjectCard(project));
+     }
+   }
 
-// Todo: create a function to handle adding a new task
-function handleAddTask(event){
+   $('.draggable').draggable({
+     opacity: 0.7,
+     zIndex: 100,
+     helper: function (e) {
+       const original = $(e.target).hasClass('ui-draggable')
+         ? $(e.target)
+         : $(e.target).closest('.ui-draggable');
+       return original.clone().css({
+         width: original.outerWidth(),
+       });
+     },
+   });
+ }
 
-}
+ function handleDeleteProject() {
+   const projectId = $(this).attr('data-project-id');
+   const projects = readProjectsFromStorage();
 
-// Todo: create a function to handle deleting a task
-function handleDeleteTask(event){
+   projects.forEach((project) => {
+     if (project.id === projectId) {
+       projects.splice(projects.indexOf(project), 1);
+     }
+   });
 
-}
+   saveProjectsToStorage(projects);
 
-// Todo: create a function to handle dropping a task into a new status lane
-function handleDrop(event, ui) {
+   printProjectData();
+ }
 
-}
+ function handleProjectFormSubmit(event) {
+   event.preventDefault();
 
-// Todo: when the page loads, render the task list, add event listeners, make lanes droppable, and make the due date field a date picker
-$(document).ready(function () {
+   const projectName = projectNameInputEl.val().trim();
+   const projectType = projectTypeInputEl.val();
+   const projectDate = projectDateInputEl.val();
 
-});
+   const newProject = {
+     name: projectName,
+     type: projectType,
+     dueDate: projectDate,
+     status: 'to-do',
+   };
 
-$( function() {
-    $( "#taskDueDate" ).datepicker({
-      changeMonth: true,
-      changeYear: true
-    });
-  } );
+   const projects = readProjectsFromStorage();
+   projects.push(newProject);
+
+   saveProjectsToStorage(projects);
+
+   printProjectData();
+
+   projectNameInputEl.val('');
+   projectTypeInputEl.val('');
+   projectDateInputEl.val('');
+ }
+
+ function handleDrop(event, ui) {
+   const projects = readProjectsFromStorage();
+
+   const taskId = ui.draggable[0].dataset.projectId;
+
+   const newStatus = event.target.id;
+
+   for (let project of projects) {
+     if (project.id === taskId) {
+       project.status = newStatus;
+     }
+   }
+   localStorage.setItem('projects', JSON.stringify(projects));
+   printProjectData();
+ }
+
+ $('#taskForm').on('submit', handleProjectFormSubmit);
+
+ projectDisplayEl.on('click', '.btn-delete-project', handleDeleteProject);
+
+ displayTime();
+ setInterval(displayTime, 1000);
+
+ $(document).ready(function () {
+   printProjectData();
+
+   $('#taskDueDate').datepicker({
+     changeMonth: true,
+     changeYear: true,
+   });
+
+   $('.lane').droppable({
+     accept: '.draggable',
+     drop: handleDrop,
+   });
+ });
