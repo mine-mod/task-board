@@ -5,9 +5,10 @@ var myModal = new bootstrap.Modal(document.getElementById('taskModal'));
 
 // Todo: create a function to generate a unique task id
 function generateTaskId() {
-    let uniqueId = nextId;
-    nextId++;
-    return uniqueId;
+  let uniqueId = nextId;
+  nextId++;
+  localStorage.setItem("nextId", nextId);
+  return uniqueId;
 }
 
 // Todo: create a function to create a task card
@@ -41,8 +42,37 @@ function createTaskCard(task) {
 
 // Todo: create a function to render the task list and make cards draggable
 function renderTaskList() {
+  let taskList = JSON.parse(localStorage.getItem("tasks")) || [];
+ 
+  taskList.forEach(task => {
+    const card = createTaskCard(task);
 
+    let column;
+    if (task.status === "Not Yet Started") {
+        column = document.getElementById("todo-cards");
+    } else if (task.status === "In Progress") {
+        column = document.getElementById("in-progress-cards");
+    } else if (task.status === "Done") {
+        column = document.getElementById("done-cards");
+    }
+
+    if (column) {
+        column.appendChild(card);
+    } else {
+        console.error("Column element not found for task status: " + task.status);
+    }
+});
+
+$(".card").draggable({
+  revert: "invalid",
+  helper: "clone"
+});
 }
+
+$(document).ready(function() {
+  renderTaskList();
+});
+
 
 // Todo: create a function to handle adding a new task
 function handleAddTask(event){
